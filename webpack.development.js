@@ -21,12 +21,6 @@ module.exports = (env) => {
         module: {
             rules: [
                 {
-                    enforce: "pre",
-                    test: /\.(js|jsx|ts|tsx)$/,
-                    exclude: /node_modules/,
-                    loader: "eslint-loader",
-                },
-                {
                     test: /\.tsx?$/,
                     loader: "ts-loader",
                     exclude: /node_modules/,
