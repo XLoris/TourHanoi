@@ -1,21 +1,18 @@
 import * as PIXI from "pixi.js";
 import "./style.css";
+import sample from "./sample";
 
 declare const VERSION: string;
 
 type GameState = [number[], number[], number[]];
 
-type GraphicsContainer = [PIXI.Graphics[], PIXI.Graphics[], PIXI.Graphics[]];
+type GraphicsContainer = PIXI.Graphics[];
+type DeltaState = {
+    from: number;
+    to: number;
+}[];
 
-type DeltaState = [number, number];
-
-const start: GameState = [
-    [38, 30, 20, 12], // 0
-    [], // 100
-    [], // 200
-];
-
-const position: GraphicsContainer = [[], [], []];
+console.log(sample.states);
 
 type Palet = {
     position: { x: number; y: number };
@@ -23,19 +20,9 @@ type Palet = {
     color: number;
 };
 
-function centre_to_haut_gauche(
-    pos: { x: number; y: number },
-    taille: { x: number; y: number }
-): { x: number; y: number } {
-    return {
-        x: pos.x - taille.x / 2,
-        y: pos.y - taille.y / 2,
-    };
-}
-
 const RECT_HEIGHT = 30;
 function taille_of_n(num: number) {
-    return num * 7;
+    return num * 70;
 }
 function color_of_n() {
     return 0xff00ff;
@@ -58,7 +45,7 @@ const place_column = (x: number) => (column: number[]): Palet[] => {
 };
 function place_palets(state: GameState) {
     const xs = state.map((_, i) => i * 400 + 200);
-    return state.map((col, i) => place_column(xs[i])(col));
+    return state.flatMap((col, i) => place_column(xs[i])(col));
 }
 
 function rectangle(object: Palet) {
@@ -66,8 +53,8 @@ function rectangle(object: Palet) {
     box.beginFill(object.color);
     box.drawRect(-(object.taille.width / 2), -(object.taille.height / 2), object.taille.width, object.taille.height);
     box.endFill();
-    box.position.x = object.position.x + object.taille.width / 2;
-    box.position.y = object.position.y + object.taille.height / 2;
+    box.position.x = object.position.x;
+    box.position.y = object.position.y;
     return box;
 }
 
@@ -89,38 +76,52 @@ document.body.appendChild(app.view);
 const container = new PIXI.Container();
 app.stage.addChild(container);
 
-const background = PIXI.Texture.from("images/FOND.png");
+const background = PIXI.Texture.from("assets/images/FOND.png");
 
-function setup(start: GameState, position: GraphicsContainer) {
+function setup(nPalets: number) {
+    let rectangles: GraphicsContainer = [];
     const bg = new PIXI.Sprite(background);
     bg.anchor.set(0.5);
-    bg.x = 1000;
-    bg.y = 100;
+    bg.scale.set(0.8);
+    bg.x = 600;
+    bg.y = 250;
     container.addChild(bg);
-    const build = place_palets(start);
-    for (var i = 0; i < 4; i++) {
-        const forme = rectangle(build[0][i]);
-        position[0].push(forme);
-        container.addChild(position[0][i]);
+    let build: Palet[] = [];
+
+    function init(initialState: GameState) {
+        build = place_palets(initialState);
+        rectangles = build.map((palet) => {
+            const forme = rectangle(palet);
+            container.addChild(forme);
+            return forme;
+        });
+    }
+
+    return function process(N: number, state: GameState, delta?: DeltaState) {
+        if (N === 0) {
+            init(state);
+        }
+        let palets = place_palets(state);
+        palets.map((palet, i) => {
+            rectangles[i].position.set(palet.position.x, palet.position.y);
+            rectangles[i].width = palet.taille.width;
+        });
+    };
+}
+
+function delay(ms: number) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function test() {
+    let process = setup(sample.states[0].state[0].length);
+    for (let i = 0; i < sample.states.length; i++) {
+        console.log(`etape ${i} ${JSON.stringify(sample.states[i].state)}`);
+        process(i, sample.states[i].state as GameState);
+        await delay(1000);
     }
 }
 
-function process(state: GameState, position: GraphicsContainer, delta: DeltaState) {
-    state[delta[1]].push(state[delta[0]][state[delta[0]].length - 1]);
-    state[delta[0]].pop();
-    position[delta[1]].push(position[delta[0]][position[delta[0]].length - 1]);
-    position[delta[0]].pop();
-
-    let pos = place_palets(state);
-    for (var i = 0; i < 3; i++) {
-        position[i].map((rect, z) => rect.position.set(pos[i][z].position.x, pos[i][z].position.y));
-    }
-}
-
-setup(start, position);
-
-process(start, position, [0, 2]);
-
-console.log(position[0][0].y);
+test();
 
 export { PIXI };
