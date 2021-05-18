@@ -1,6 +1,7 @@
 import * as PIXI from "pixi.js";
 import "./style.css";
 import sample from "./sample";
+import { cpuUsage } from "node:process";
 
 declare const VERSION: string;
 
@@ -110,10 +111,10 @@ function setup(nPalets: number) {
     bg.y = 250;
     container.addChild(bg);
     container.addChild(Plane9);
-    Plane9.width = 420;
-    Plane9.height = 60;
-    Plane9.scale.set(0.2, 0.2);
+    Plane9.width = 210;
+    Plane9.height = 30;
     Plane9.tint = 0xff00ff;
+    Plane9.position.set(1000 - Plane9.width / 2, 200 - Plane9.height / 2);
     let build: Palet[] = [];
 
     function init(initialState: GameState) {
@@ -142,6 +143,7 @@ function setup(nPalets: number) {
         palets.map((palet, i) => {
             updateRect(rectangles[i], palet);
         });
+        console.log(rectangles[0].position);
     };
 }
 
