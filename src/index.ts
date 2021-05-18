@@ -12,7 +12,7 @@ type DeltaState = {
     to: number;
 }[];
 
-console.log(sample.states);
+//console.log(sample.states);
 
 type Palet = {
     position: { x: number; y: number };
@@ -21,11 +21,14 @@ type Palet = {
 };
 
 const RECT_HEIGHT = 30;
+
+const RECT_COLORS = [0x7101f8, 0x6da2ef, 0x6def94];
+
 function taille_of_n(num: number) {
     return num * 70;
 }
-function color_of_n() {
-    return 0xff00ff;
+function color_of_n(num: number) {
+    return RECT_COLORS[num - 1];
 }
 
 const place_column = (x: number) => (column: number[]): Palet[] => {
@@ -39,7 +42,7 @@ const place_column = (x: number) => (column: number[]): Palet[] => {
                 width: taille_of_n(num),
                 height: RECT_HEIGHT,
             },
-            color: 0xff00ff,
+            color: color_of_n(num),
         };
     });
 };
@@ -65,27 +68,52 @@ if (!PIXI.utils.isWebGLSupported()) {
 
 PIXI.utils.sayHello(type);
 
+const size = [window.innerWidth, window.innerHeight];
+const ratio = size[0] / size[1];
+
 const app = new PIXI.Application({
-    width: 1250,
-    height: 600,
-    backgroundColor: 0xffffff,
+    width: size[0],
+    height: size[1],
+    backgroundColor: 0x444444,
     resolution: window.devicePixelRatio || 1,
 });
 document.body.appendChild(app.view);
+resize();
+function resize() {
+    if (window.innerWidth / window.innerHeight >= ratio) {
+        var w = window.innerHeight * ratio;
+        var h = window.innerHeight;
+    } else {
+        var w = window.innerWidth;
+        var h = window.innerWidth / ratio;
+    }
+    app.view.style.width = w + "px";
+    app.view.style.height = h + "px";
+}
+window.onresize = function () {
+    resize();
+};
 
 const container = new PIXI.Container();
 app.stage.addChild(container);
 
 const background = PIXI.Texture.from("assets/images/FOND.png");
+const plane = PIXI.Texture.from("assets/images/BoxWithRoundedCorners.png");
 
 function setup(nPalets: number) {
     let rectangles: GraphicsContainer = [];
     const bg = new PIXI.Sprite(background);
+    const Plane9 = new PIXI.NineSlicePlane(plane, 30, 30, 30, 30);
     bg.anchor.set(0.5);
     bg.scale.set(0.8);
     bg.x = 600;
     bg.y = 250;
     container.addChild(bg);
+    container.addChild(Plane9);
+    Plane9.width = 420;
+    Plane9.height = 60;
+    Plane9.scale.set(0.2, 0.2);
+    Plane9.tint = 0xff00ff;
     let build: Palet[] = [];
 
     function init(initialState: GameState) {
@@ -97,14 +125,22 @@ function setup(nPalets: number) {
         });
     }
 
+    function updateRect(rect: PIXI.Graphics, palet: Palet) {
+        rect.clear();
+        rect.beginFill(palet.color);
+        rect.drawRect(-(palet.taille.width / 2), -(palet.taille.height / 2), palet.taille.width, palet.taille.height);
+        rect.endFill();
+        rect.position.set(palet.position.x, palet.position.y);
+    }
+
     return function process(N: number, state: GameState, delta?: DeltaState) {
         if (N === 0) {
             init(state);
         }
+
         let palets = place_palets(state);
         palets.map((palet, i) => {
-            rectangles[i].position.set(palet.position.x, palet.position.y);
-            rectangles[i].width = palet.taille.width;
+            updateRect(rectangles[i], palet);
         });
     };
 }
@@ -116,7 +152,7 @@ function delay(ms: number) {
 async function test() {
     let process = setup(sample.states[0].state[0].length);
     for (let i = 0; i < sample.states.length; i++) {
-        console.log(`etape ${i} ${JSON.stringify(sample.states[i].state)}`);
+        //console.log(`etape ${i} ${JSON.stringify(sample.states[i].state)}`);
         process(i, sample.states[i].state as GameState);
         await delay(1000);
     }
