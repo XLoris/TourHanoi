@@ -323,7 +323,7 @@ function setup(nPalets: number) {
             for (let i = 0; i < rectangles.length; i++) {
                 for (let q = 0; q < palets.length; q++) {
                     if (palets[q].taille.width == rectangles[i].graphics.width) {
-                        updateRect(rectangles[i], palets[q]);
+                        updateRect_init(rectangles[i].graphics, palets[q]);
                     }
                 }
             }
