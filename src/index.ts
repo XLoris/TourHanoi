@@ -33,7 +33,7 @@ const RECT_WIDTH = 120;
 const RECT_COLORS = [0x7101f8, 0x6da2ef, 0x6def94];
 
 function taille_of_n(num: number) {
-    return num * RECT_WIDTH;
+    return num * RECT_WIDTH; /// Changer num en indice de num
 }
 function color_of_n(num: number) {
     return RECT_COLORS[num - 1];
@@ -265,18 +265,6 @@ function setup(nPalets: number) {
             container.addChild(element);
             return forme;
         });
-    }
-
-    function coordinateId(actualState: GameState, id: number) {
-        let correctIndex: [number, number];
-        for (let i = 0; i < actualState.length; i++) {
-            for (let z = 0; z < actualState.length; z++) {
-                if (actualState[i][z] === id) {
-                    correctIndex = [i, z];
-                    return correctIndex;
-                }
-            }
-        }
     }
 
     function animate(time: number) {
