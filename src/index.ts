@@ -20,11 +20,8 @@ type Palet = {
     position: { x: number; y: number };
     taille: { width: number; height: number };
     color: number;
+    num: number;
 };
-
-let t = 0;
-
-let actualState: GameState;
 
 const RECT_HEIGHT = 50;
 
@@ -51,6 +48,7 @@ const place_column = (x: number) => (column: number[]): Palet[] => {
                 height: RECT_HEIGHT,
             },
             color: color_of_n(num),
+            num: num,
         };
     });
 };
@@ -93,32 +91,32 @@ class GraphicPalet {
         this.graphics = rectangle(palet);
     }
 
-    set_pos_palet = (palet: GraphicPalet) => (pos: Position) => {
-        palet.old_pos = palet.target_pos;
-        palet.target_pos = pos;
-        if (palet.old_pos.x != palet.target_pos.x) {
-            palet.t = 0;
+    set_pos = (pos: Position) => {
+        this.old_pos = this.target_pos;
+        this.target_pos = pos;
+        if (this.old_pos.x != this.target_pos.x) {
+            this.t = 0;
         }
     };
 
     // chaque frame, (call dans le ticker)
-    palet_animate = (palet: GraphicPalet) => {
-        let width = palet.graphics.width / 2;
-        let height = palet.graphics.height / 2;
-        palet.t = Math.min(1, palet.t + animation_speed * (ticker.deltaMS / 1000));
-        if (palet.t < 1) {
+    animate = () => {
+        let width = this.graphics.width / 2;
+        let height = this.graphics.height / 2;
+        this.t = Math.min(1, this.t + animation_speed * (ticker.deltaMS / 1000));
+        if (this.t < 1) {
             let posRect: Position = interpChemin(
                 [
-                    pos(palet.old_pos.x - width, palet.old_pos.y - height),
-                    pos(palet.old_pos.x - width, 5),
-                    pos(palet.target_pos.x - width, 5),
-                    pos(palet.target_pos.x - width, palet.target_pos.y - height),
+                    pos(this.old_pos.x - width, this.old_pos.y - height),
+                    pos(this.old_pos.x - width, 5),
+                    pos(this.target_pos.x - width, 5),
+                    pos(this.target_pos.x - width, this.target_pos.y - height),
                 ],
                 EasingFunctions.linear
-            )(palet.t);
+            )(this.t);
 
-            palet.graphics.x = posRect.x;
-            palet.graphics.y = posRect.y;
+            this.graphics.x = posRect.x;
+            this.graphics.y = posRect.y;
         }
     };
 }
@@ -245,6 +243,17 @@ let renderer = PIXI.autoDetectRenderer();
 
 document.body.appendChild(renderer.view);
 
+function buildIndices(state: GameState) {
+    let flat = state.flat();
+    const byValue = (a: number, b: number) => b - a;
+    flat.sort(byValue);
+    console.log(flat);
+    const indices = new Map(flat.map((n, i) => [n, i]));
+    return function getIndex(n: number): number | undefined {
+        return indices.get(n);
+    };
+}
+
 function setup(nPalets: number) {
     let rectangles: GraphicsContainer = [];
     const bg = new PIXI.Sprite(background);
@@ -254,8 +263,10 @@ function setup(nPalets: number) {
     bg.y = 250;
     container.addChild(bg);
     let build: Palet[] = [];
+    let getIndex: (n: number) => number | undefined;
 
     function init(initialState: GameState) {
+        getIndex = buildIndices(initialState);
         build = place_palets(initialState);
         //img = rectangle(build[0]);
         //container.addChild(img);
@@ -267,9 +278,15 @@ function setup(nPalets: number) {
         });
     }
 
+    function updateRect_init(rect: PIXI.NineSlicePlane, palet: Palet) {
+        rect.tint = palet.color;
+        rect.position.set(palet.position.x - palet.taille.width / 2, palet.position.y - palet.taille.height / 2);
+        rect.width = palet.taille.width;
+    }
+
     function animate(time: number) {
         for (let i = 0; i < rectangles.length; i++) {
-            rectangles[i].palet_animate(rectangles[i]);
+            rectangles[i].animate();
         }
 
         requestAnimationFrame(animate);
@@ -278,14 +295,8 @@ function setup(nPalets: number) {
         renderer.render(container);
     }
 
-    function updateRect_init(rect: PIXI.NineSlicePlane, palet: Palet) {
-        rect.tint = palet.color;
-        rect.position.set(palet.position.x - palet.taille.width / 2, palet.position.y - palet.taille.height / 2);
-        rect.width = palet.taille.width;
-    }
-
     function updateRect(rectangle: GraphicPalet, palet: Palet) {
-        rectangle.set_pos_palet(rectangle)(palet.position);
+        rectangle.set_pos(palet.position);
     }
 
     function sortRectangles(state: GameState) {
@@ -308,22 +319,14 @@ function setup(nPalets: number) {
         if (N === 0) {
             init(state);
             let palets = place_palets(state);
-            for (let i = 0; i < rectangles.length; i++) {
-                for (let q = 0; q < palets.length; q++) {
-                    if (palets[q].taille.width == rectangles[i].graphics.width) {
-                        updateRect_init(rectangles[i].graphics, palets[q]);
-                    }
-                }
-            }
         }
         if (N > 0) {
             let palets = place_palets(state);
-            let rect_sort = sortRectangles(state);
-            palets.map((palet, i) => {
+
+            palets.map((palet) => {
                 console.log(palet);
-                updateRect(rect_sort[i], palet);
+                updateRect(rectangles[getIndex(palet.num) as number], palet);
             });
-            console.log(rect_sort);
         }
         animate(performance.now());
     };
@@ -334,6 +337,7 @@ function delay(ms: number) {
 }
 
 async function test() {
+    let actualState: GameState;
     let process = setup(sample.states[0].state[0].length);
     for (let i = 0; i < 8; i++) {
         //console.log(`etape ${i} ${JSON.stringify(sample.states[i].state)}`);

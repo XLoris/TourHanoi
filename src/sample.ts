@@ -5,7 +5,7 @@ const sample = {
     },
     states: [
         {
-            state: [[3, 2, 1], [], []], /// flat pour obtenir [3, 2, 1] => tri ascendant => créé new Map([10,0],[20,1],[30,2])
+            state: [[3, 2, 1], [], []], /// flat pour obtenir [3, 2, 1] => tri ascendant => créer new Map([10,0],[20,1],[30,2])
             delta: [], /// =>  tableau associatif (pour state = [10, 20, 30]) indices.get(30)
         },
         {
