@@ -126,7 +126,7 @@ type Chemin = Position[];
 const interpChemin = (chemin: Chemin, easing: EasingFunction) => (t: number): Position => {
     /** */
     if (chemin.length <= 2) {
-        throw new Error("chemin trop court");
+        throw new Error("chemin trop courtt");
     }
     const n = chemin.length;
     for (let i = 0; i < n - 1; i++) {
